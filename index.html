@@ -1,197 +1,177 @@
 <!doctype html>
 <html lang="ro">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#172b43">
-<title>FINANCIAR – Scanner live</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#172b43"><title>FINANCIAR – Scanner V3</title>
 <style>
-:root{font-family:Arial,sans-serif;color:#172b43;background:#f2f5f8}
-*{box-sizing:border-box}body{margin:0;padding:12px}
-.panel{max-width:720px;margin:0 auto;background:#fff;border:1px solid #dce3eb;border-radius:16px;padding:16px;box-shadow:0 5px 20px #152b4310}
-h1{font-size:21px;margin:0 0 7px}p{font-size:14px;line-height:1.45;color:#657386}
-#cameraWrap{position:relative;background:#111;border-radius:12px;overflow:hidden;aspect-ratio:3/4;margin-top:12px}
-video,canvas#overlay{position:absolute;width:100%;height:100%;inset:0;object-fit:cover}
-#overlay{pointer-events:none}
-button,select{width:100%;padding:14px;border:0;border-radius:10px;font-size:16px;font-weight:700;margin-top:10px}
-button{background:#245b8f;color:#fff}button.secondary{background:#e9eef4;color:#203c59}button:disabled{opacity:.45}
-select{border:1px solid #cbd5e1;background:#fff}
+*{box-sizing:border-box}body{margin:0;padding:12px;background:#f2f5f8;color:#172b43;font-family:Arial,sans-serif}
+.panel{max-width:720px;margin:auto;padding:16px;background:#fff;border:1px solid #dce3eb;border-radius:15px}
+h1{font-size:21px;margin:0 0 8px}p{font-size:14px;line-height:1.45;color:#617084}
+#stage{position:relative;width:100%;aspect-ratio:3/4;background:#171717;border-radius:12px;overflow:hidden;margin:12px 0}
+video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}#overlay{pointer-events:none}
+button,.filelabel,select{width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;margin-top:9px}
+button{border:0;background:#245b8f;color:white}button.secondary,.filelabel{background:#e9eef4;color:#203c59}
+button:disabled{opacity:.45}
+.filelabel{display:block;text-align:center;cursor:pointer;border:1px solid #d5dde7}
+input[type=file]{display:none}
+select{border:1px solid #cbd5e1;background:white}
 #status{padding:11px;border-radius:9px;background:#edf1f5;font-size:13px;line-height:1.4;margin-top:12px}
 #status.ok{background:#e5f5eb;color:#176638}#status.err{background:#fdeaea;color:#a12626}
-#result{width:100%;max-height:55vh;object-fit:contain;margin-top:12px;background:#eef1f4}
-.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.hint{font-size:12px}
-.hidden{display:none!important}
+#result{display:block;width:100%;max-height:55vh;object-fit:contain;margin-top:12px;background:#eef1f4}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:12px}.hidden{display:none!important}
 </style>
 </head>
-<body>
-<main class="panel">
+<body><main class="panel">
 <h1>Scanner FINANCIAR</h1>
-<p>Încadrează documentul în cameră. Scannerul încearcă să detecteze cele patru colțuri în timp real și afișează conturul înainte de fotografiere.</p>
-<div id="cameraWrap" class="hidden">
- <video id="video" autoplay playsinline muted></video>
- <canvas id="overlay"></canvas>
-</div>
-<div class="row">
- <button id="start">PORNEȘTE CAMERA</button>
- <button id="stop" class="secondary" disabled>OPREȘTE CAMERA</button>
-</div>
+<p>Încadrează pagina în zona camerei. Conturul verde apare când sunt detectate cele patru margini. Poți folosi și o fotografie din galerie.</p>
+<div id="stage" class="hidden"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas></div>
+<div class="row"><button id="start">PORNEȘTE CAMERA</button><button id="stop" class="secondary" disabled>OPREȘTE CAMERA</button></div>
+<label class="filelabel" for="photo">ÎNCARCĂ O FOTOGRAFIE DIN GALERIE</label><input id="photo" type="file" accept="image/*">
 <label for="mode" style="display:block;margin-top:13px;font-weight:bold">Aspectul documentului</label>
 <select id="mode"><option value="color">Color</option><option value="gray">Tonuri de gri</option><option value="bw">Alb-negru – text</option></select>
 <button id="capture" disabled>FOTOGRAFIAZĂ DOCUMENTUL</button>
 <button id="again" class="secondary hidden">SCANEAZĂ ALTĂ PAGINĂ</button>
-<img id="result" class="hidden" alt="Document scanat">
-<div id="status">Apasă „Pornește camera” și permite accesul la cameră.</div>
-<p class="hint">Detectarea se face pe telefon. Fotografiile nu sunt încărcate pe GitHub. Pentru rezultate bune, folosește lumină uniformă și un fundal contrastant.</p>
+<img id="result" class="hidden" alt="Previzualizare document">
+<div id="status">Apasă „Pornește camera” sau încarcă o fotografie din galerie.</div>
+<p class="hint">Detecția se face local, pe telefon. Fotografiile nu sunt încărcate pe GitHub. Folosește lumină uniformă și un fundal contrastant.</p>
 </main>
-<script src="https://docs.opencv.org/4.x/opencv.js" async></script>
 <script>
 'use strict';
-const $=id=>document.getElementById(id);
-const video=$('video'), wrap=$('cameraWrap'), overlay=$('overlay'), ctx=overlay.getContext('2d');
-const startBtn=$('start'),stopBtn=$('stop'),captureBtn=$('capture'),againBtn=$('again'),statusBox=$('status'),result=$('result');
-const params=new URLSearchParams(location.search);
-const parentOrigin=params.get('parentOrigin')||'';
-let stream=null,cvReady=false,cvLoading=null,loop=null,lastQuad=null,busy=false;
-function status(t,k=''){statusBox.textContent=t;statusBox.className=k;}
-function loadOpenCV(){
- if(cvLoading)return cvLoading;
- cvLoading=new Promise((resolve,reject)=>{
-  let attempts=0;
-  const poll=setInterval(()=>{
-   attempts++;
-   if(window.cv && window.cv.Mat && window.cv.imread){clearInterval(poll);cvReady=true;resolve(window.cv);}
-   if(attempts>300){clearInterval(poll);reject(new Error('Motorul de scanare nu s-a încărcat. Verifică internetul și reîncarcă pagina.'));}
-  },100);
+const $=id=>document.getElementById(id), video=$('video'),stage=$('stage'),overlay=$('overlay'),ctx=overlay.getContext('2d');
+const statusBox=$('status'),captureBtn=$('capture'),result=$('result'),photoInput=$('photo');
+const parentOrigin=new URLSearchParams(location.search).get('parentOrigin')||'';
+let stream=null,cvReady=false,cvPromise=null,detectorTimer=null,lastQuad=null,busy=false,sourceImage=null;
+function say(t,kind=''){statusBox.textContent=t;statusBox.className=kind}
+function loadCV(){
+ if(cvReady)return Promise.resolve(window.cv);
+ if(cvPromise)return cvPromise;
+ cvPromise=new Promise((resolve,reject)=>{
+  const timeout=setTimeout(()=>reject(new Error('OpenCV nu s-a încărcat. Verifică internetul și reîncarcă pagina.')),25000);
+  const s=document.createElement('script');s.async=true;s.src='https://docs.opencv.org/4.x/opencv.js';
+  s.onload=()=>{let n=0;const poll=setInterval(()=>{if(window.cv&&window.cv.Mat){clearInterval(poll);clearTimeout(timeout);cvReady=true;resolve(window.cv)}else if(++n>250){clearInterval(poll);clearTimeout(timeout);reject(new Error('Motorul OpenCV nu a inițializat biblioteca.'))}},100)};
+  s.onerror=()=>{clearTimeout(timeout);reject(new Error('Nu pot descărca OpenCV. Verifică conexiunea la internet.'))};
+  document.head.appendChild(s);
  });
- return cvLoading;
+ return cvPromise;
 }
-function orderPts(pts){
- const c=pts.reduce((a,p)=>({x:a.x+p.x/4,y:a.y+p.y/4}),{x:0,y:0});
- let a=pts.slice().sort((p,q)=>Math.atan2(p.y-c.y,p.x-c.x)-Math.atan2(q.y-c.y,q.x-c.x));
- let i=a.reduce((best,p,j)=>p.x+p.y<a[best].x+a[best].y?j:best,0);
- a=a.slice(i).concat(a.slice(0,i));
- const cross=(a[1].x-a[0].x)*(a[2].y-a[1].y)-(a[1].y-a[0].y)*(a[2].x-a[1].x);
- if(cross<0)a=[a[0],a[3],a[2],a[1]];
- return a;
+function sortCorners(points){
+ const c=points.reduce((a,p)=>({x:a.x+p.x/4,y:a.y+p.y/4}),{x:0,y:0});
+ const sorted=points.slice().sort((a,b)=>Math.atan2(a.y-c.y,a.x-c.x)-Math.atan2(b.y-c.y,b.x-c.x));
+ let idx=0;for(let i=1;i<4;i++)if(sorted[i].x+sorted[i].y<sorted[idx].x+sorted[idx].y)idx=i;
+ let q=sorted.slice(idx).concat(sorted.slice(0,idx));
+ const cross=(q[1].x-q[0].x)*(q[2].y-q[1].y)-(q[1].y-q[0].y)*(q[2].x-q[1].x);
+ if(cross<0)q=[q[0],q[3],q[2],q[1]];
+ return q;
 }
-function findDocument(cv,sourceCanvas){
- const src=cv.imread(sourceCanvas),gray=new cv.Mat(),blur=new cv.Mat(),edges=new cv.Mat();
- let best=null,bestArea=sourceCanvas.width*sourceCanvas.height*.12;
+function detectQuad(cv,canvas){
+ const src=cv.imread(canvas),gray=new cv.Mat(),blur=new cv.Mat(),edges=new cv.Mat(),thr=new cv.Mat();
+ let best=null,bestArea=canvas.width*canvas.height*.10;
+ const kernel=cv.Mat.ones(3,3,cv.CV_8U);
  try{
-  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
-  cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);
-  cv.Canny(blur,edges,45,130);
-  const kernel=cv.Mat.ones(3,3,cv.CV_8U);
-  cv.dilate(edges,edges,kernel);
-  const contours=new cv.MatVector(),hierarchy=new cv.Mat();
-  try{
-   cv.findContours(edges,contours,hierarchy,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
-   for(let i=0;i<contours.size();i++){
-    const contour=contours.get(i),approx=new cv.Mat();
-    try{
-     const peri=cv.arcLength(contour,true);
-     cv.approxPolyDP(contour,approx,.025*peri,true);
-     const area=Math.abs(cv.contourArea(approx));
-     if(approx.rows===4&&cv.isContourConvex(approx)&&area>bestArea){
-      const d=approx.data32S;
-      best=[{x:d[0],y:d[1]},{x:d[2],y:d[3]},{x:d[4],y:d[5]},{x:d[6],y:d[7]}];
-      bestArea=area;
-     }
-    }finally{contour.delete();approx.delete();}
-   }
-  }finally{contours.delete();hierarchy.delete();kernel.delete();}
- }finally{src.delete();gray.delete();blur.delete();edges.delete();}
- return best?orderPts(best):null;
+  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);
+  const attempts=[];
+  cv.Canny(blur,edges,25,90);cv.dilate(edges,edges,kernel);attempts.push(edges);
+  cv.adaptiveThreshold(blur,thr,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,31,10);
+  cv.bitwise_not(thr,thr);attempts.push(thr);
+  for(const mat of attempts){
+   const contours=new cv.MatVector(),hier=new cv.Mat();
+   try{
+    cv.findContours(mat,contours,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+    for(let i=0;i<contours.size();i++){
+     const c=contours.get(i),approx=new cv.Mat();
+     try{
+      const peri=cv.arcLength(c,true);cv.approxPolyDP(c,approx,.025*peri,true);
+      const area=Math.abs(cv.contourArea(approx));
+      if(approx.rows===4&&cv.isContourConvex(approx)&&area>bestArea){
+       const d=approx.data32S;const pts=[{x:d[0],y:d[1]},{x:d[2],y:d[3]},{x:d[4],y:d[5]},{x:d[6],y:d[7]}];
+       const lengths=pts.map((p,j)=>Math.hypot(p.x-pts[(j+1)%4].x,p.y-pts[(j+1)%4].y));
+       if(Math.min(...lengths)>25){best=sortCorners(pts);bestArea=area;}
+      }
+     }finally{c.delete();approx.delete()}
+    }
+   }finally{contours.delete();hier.delete()}
+   if(best)break;
+  }
+ }finally{src.delete();gray.delete();blur.delete();edges.delete();thr.delete();kernel.delete()}
+ return best;
 }
 const work=document.createElement('canvas'),wctx=work.getContext('2d',{willReadFrequently:true});
-function analyze(){
+function drawQuad(q){
+ overlay.width=Math.round(stage.clientWidth*devicePixelRatio);overlay.height=Math.round(stage.clientHeight*devicePixelRatio);
+ ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);ctx.clearRect(0,0,stage.clientWidth,stage.clientHeight);
+ if(!q)return;
+ const scale=Math.min(stage.clientWidth/work.width,stage.clientHeight/work.height);
+ const ox=(stage.clientWidth-work.width*scale)/2,oy=(stage.clientHeight-work.height*scale)/2;
+ ctx.beginPath();q.forEach((p,i)=>i?ctx.lineTo(ox+p.x*scale,oy+p.y*scale):ctx.moveTo(ox+p.x*scale,oy+p.y*scale));ctx.closePath();
+ ctx.fillStyle='rgba(36,220,125,.12)';ctx.strokeStyle='#24dc7d';ctx.lineWidth=3;ctx.fill();ctx.stroke();
+ q.forEach(p=>{ctx.beginPath();ctx.arc(ox+p.x*scale,oy+p.y*scale,5,0,Math.PI*2);ctx.fillStyle='#24dc7d';ctx.fill()});
+}
+function analyzeFrame(){
  if(!stream||video.readyState<2||busy||!cvReady)return;
  busy=true;
  try{
-  const vw=video.videoWidth,vh=video.videoHeight;
-  if(!vw||!vh)return;
-  const scale=Math.min(1,720/Math.max(vw,vh));
-  work.width=Math.round(vw*scale);work.height=Math.round(vh*scale);
+  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return;
+  const scale=Math.min(1,850/Math.max(vw,vh));work.width=Math.round(vw*scale);work.height=Math.round(vh*scale);
   wctx.drawImage(video,0,0,work.width,work.height);
-  const quad=findDocument(window.cv,work);
-  overlay.width=wrap.clientWidth*devicePixelRatio;overlay.height=wrap.clientHeight*devicePixelRatio;
-  ctx.setTransform(devicePixelRatio,0,0,devicePixelRatio,0,0);
-  ctx.clearRect(0,0,wrap.clientWidth,wrap.clientHeight);
-  if(quad){
-   lastQuad=quad;
-   const sx=wrap.clientWidth/work.width,sy=wrap.clientHeight/work.height;
-   ctx.beginPath();quad.forEach((p,i)=>i?ctx.lineTo(p.x*sx,p.y*sy):ctx.moveTo(p.x*sx,p.y*sy));ctx.closePath();
-   ctx.lineWidth=3;ctx.strokeStyle='#31e981';ctx.fillStyle='rgba(49,233,129,.13)';ctx.fill();ctx.stroke();
-   quad.forEach(p=>{ctx.beginPath();ctx.arc(p.x*sx,p.y*sy,5,0,Math.PI*2);ctx.fillStyle='#31e981';ctx.fill();});
-   captureBtn.disabled=false;status('Document detectat. Poți fotografia pagina.','ok');
-  }else{
-   lastQuad=null;captureBtn.disabled=false;
-   status('Apropie camera de document și asigură-te că toate cele patru colțuri sunt vizibile.');
-  }
- }catch(e){status('Detecția a întâmpinat o problemă: '+e.message,'err');}
- finally{busy=false;}
+  lastQuad=detectQuad(window.cv,work);drawQuad(lastQuad);
+  say(lastQuad?'Document detectat. Conturul verde indică decuparea.':'Camera funcționează. Nu am detectat încă toate colțurile; încearcă un fundal mai contrastant. ',lastQuad?'ok':'');
+  captureBtn.disabled=false;
+ }catch(e){say('Eroare la detectarea marginilor: '+e.message,'err')}
+ finally{busy=false}
 }
 async function startCamera(){
- startBtn.disabled=true;status('Se pornește camera…');
+ $('start').disabled=true;say('Se pornește camera…');
  try{
-  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-   throw new Error('Browserul nu permite accesul la cameră. Deschide linkul direct în Safari, nu în browserul din WhatsApp.');
-  }
+  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Browserul nu oferă acces la cameră. Deschide linkul în Safari.');
   stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1920}}});
-  video.srcObject=stream;await video.play();wrap.classList.remove('hidden');
-  startBtn.disabled=true;stopBtn.disabled=false;captureBtn.disabled=false;
-  status('Camera este pornită. Se încarcă detectarea marginilor în fundal…');
-  loop=setInterval(analyze,450);
-  loadOpenCV().then(()=>{if(stream){status('Camera este pornită. Încadrează documentul pentru detectarea marginilor.','ok');analyze();}})
-    .catch(e=>{if(stream)status('Camera funcționează, dar detectarea automată nu s-a încărcat. Poți fotografia pagina; încearcă să reîncarci Safari pentru detectarea marginilor.','err');});
- }catch(e){
-  startBtn.disabled=false;
-  let msg=e.name==='NotAllowedError'?'Accesul la cameră a fost refuzat. Deschide setările Safari și permite Camera pentru acest site.':
-   e.name==='NotFoundError'?'Nu a fost găsită nicio cameră disponibilă.':
-   e.name==='NotReadableError'?'Camera este folosită de altă aplicație. Închide aplicațiile care o folosesc și reîncearcă.':e.message;
-  status(msg,'err');
- }
+  video.srcObject=stream;stage.classList.remove('hidden');await video.play();
+  $('stop').disabled=false;captureBtn.disabled=false;say('Camera este pornită. Se încarcă detectarea marginilor…');
+  loadCV().then(()=>{if(stream){say('Motorul este gata. Încadrează documentul.');analyzeFrame();detectorTimer=setInterval(analyzeFrame,450)}}).catch(e=>say(e.message+' Poți fotografia sau folosi galeria fără decupare automată.','err'));
+ }catch(e){$('start').disabled=false;say('Nu am putut porni camera: '+e.message,'err')}
 }
 function stopCamera(){
- if(loop){clearInterval(loop);loop=null;}
- if(stream){stream.getTracks().forEach(t=>t.stop());stream=null;}
- video.srcObject=null;wrap.classList.add('hidden');startBtn.disabled=false;stopBtn.disabled=true;captureBtn.disabled=true;lastQuad=null;
+ if(detectorTimer){clearInterval(detectorTimer);detectorTimer=null}
+ if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+ video.srcObject=null;stage.classList.add('hidden');$('start').disabled=false;$('stop').disabled=true;captureBtn.disabled=true;lastQuad=null;
 }
-function applyMode(canvas,mode){
- if(mode==='color')return;
- const c=canvas.getContext('2d',{willReadFrequently:true}),im=c.getImageData(0,0,canvas.width,canvas.height),d=im.data;
- for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(mode==='bw')y=y>178?255:(y<145?0:y);d[i]=d[i+1]=d[i+2]=y;}
- c.putImageData(im,0,0);
+function perspective(source,quad){
+ const cv=window.cv,w=source.width,h=source.height;
+ const pts=quad.map(p=>({x:p.x*w/work.width,y:p.y*h/work.height})),[tl,tr,br,bl]=pts;
+ const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
+ const ow=Math.round(Math.max(dist(tl,tr),dist(bl,br))),oh=Math.round(Math.max(dist(tl,bl),dist(tr,br)));
+ if(ow<100||oh<100||ow*oh>22000000)return source;
+ const src=cv.imread(source),from=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]),to=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,ow,0,ow,oh,0,oh]),m=cv.getPerspectiveTransform(from,to),dst=new cv.Mat(),out=document.createElement('canvas');
+ try{cv.warpPerspective(src,dst,m,new cv.Size(ow,oh),cv.INTER_CUBIC,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));cv.imshow(out,dst);return out}
+ finally{src.delete();from.delete();to.delete();m.delete();dst.delete()}
+}
+function finishImage(source,quad){
+ let out=source;
+ if(quad&&cvReady){try{out=perspective(source,quad)}catch(e){say('Nu am putut corecta perspectiva; folosesc fotografia originală. '+e.message,'err')}}
+ const mode=$('mode').value;
+ if(mode!=='color'){
+  const c=out.getContext('2d',{willReadFrequently:true}),im=c.getImageData(0,0,out.width,out.height),d=im.data;
+  for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(mode==='bw')y=y>178?255:0;d[i]=d[i+1]=d[i+2]=y}c.putImageData(im,0,0)
+ }
+ const data=out.toDataURL('image/jpeg',.88);result.src=data;result.classList.remove('hidden');$('again').classList.remove('hidden');
+ if(parentOrigin){window.parent.postMessage({type:'FINANCIAR_SCAN_PAGE',imageDataUrl:data,mimeType:'image/jpeg'},parentOrigin);say('Pagina a fost transmisă către FINANCIAR.','ok')}
+ else say('Scanare realizată. Verifică previzualizarea.','ok');
 }
 function capture(){
  if(!stream||video.readyState<2)return;
- try{
-  const vw=video.videoWidth,vh=video.videoHeight;
-  const source=document.createElement('canvas');source.width=vw;source.height=vh;
-  source.getContext('2d').drawImage(video,0,0,vw,vh);
-  let output=source;
-  if(lastQuad && cvReady){
-   const sx=vw/work.width,sy=vh/work.height;
-   const pts=lastQuad.map(p=>({x:p.x*sx,y:p.y*sy})),[tl,tr,br,bl]=pts;
-   const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
-   const ow=Math.round(Math.max(dist(tl,tr),dist(bl,br))),oh=Math.round(Math.max(dist(tl,bl),dist(tr,br)));
-   if(ow>100&&oh>100&&ow*oh<20000000){
-    const cv=window.cv,src=cv.imread(source),from=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]),to=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,ow,0,ow,oh,0,oh]),m=cv.getPerspectiveTransform(from,to),dst=new cv.Mat();
-    try{cv.warpPerspective(src,dst,m,new cv.Size(ow,oh),cv.INTER_CUBIC,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));output=document.createElement('canvas');cv.imshow(output,dst);}
-    finally{src.delete();from.delete();to.delete();m.delete();dst.delete();}
-   }
-  }
-  applyMode(output,$('mode').value);
-  const data=output.toDataURL('image/jpeg',.88);
-  result.src=data;result.classList.remove('hidden');againBtn.classList.remove('hidden');
-  if(parentOrigin){window.parent.postMessage({type:'FINANCIAR_SCAN_PAGE',imageDataUrl:data,mimeType:'image/jpeg'},parentOrigin);status('Pagina scanată și trimisă către FINANCIAR. Poți continua cu următoarea pagină.','ok');}
-  else status('Scanare realizată. Pentru test, verifică previzualizarea de mai jos.','ok');
-  stopCamera();
- }catch(e){status('Nu am putut procesa fotografia: '+e.message,'err');}
+ const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0);
+ finishImage(c,lastQuad);stopCamera();
 }
-startBtn.addEventListener('click',startCamera);stopBtn.addEventListener('click',stopCamera);captureBtn.addEventListener('click',capture);
-againBtn.addEventListener('click',()=>{result.classList.add('hidden');againBtn.classList.add('hidden');startCamera();});
+photoInput.addEventListener('change',async()=>{
+ const file=photoInput.files?.[0];if(!file)return;
+ const img=new Image();img.onload=async()=>{
+  const c=document.createElement('canvas');const scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight));c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+  say('Fotografie încărcată. Încerc să detectez marginile…');
+  try{await loadCV();const q=detectQuad(window.cv,c);work.width=c.width;work.height=c.height;lastQuad=q;finishImage(c,q);if(!q)say('Fotografia este disponibilă, dar nu am găsit sigur cele patru colțuri. Am păstrat fotografia întreagă.','')}
+  catch(e){finishImage(c,null);say('Fotografia a fost încărcată fără decupare automată: '+e.message,'')}
+  URL.revokeObjectURL(img.src)
+ };img.onerror=()=>say('Nu pot deschide fotografia selectată.','err');img.src=URL.createObjectURL(file);
+});
+$('start').addEventListener('click',startCamera);$('stop').addEventListener('click',stopCamera);captureBtn.addEventListener('click',capture);
+$('again').addEventListener('click',()=>{result.classList.add('hidden');$('again').classList.add('hidden');startCamera()});
 window.addEventListener('pagehide',stopCamera);
-</script>
-</body></html>
+</script></body></html>
