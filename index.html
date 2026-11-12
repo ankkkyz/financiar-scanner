@@ -106,7 +106,7 @@ function findDocument(cv,sourceCanvas){
 }
 const work=document.createElement('canvas'),wctx=work.getContext('2d',{willReadFrequently:true});
 function analyze(){
- if(!stream||video.readyState<2||busy)return;
+ if(!stream||video.readyState<2||busy||!cvReady)return;
  busy=true;
  try{
   const vw=video.videoWidth,vh=video.videoHeight;
@@ -133,16 +133,21 @@ function analyze(){
  finally{busy=false;}
 }
 async function startCamera(){
- startBtn.disabled=true;status('Se pornește camera și se încarcă motorul de detectare…');
+ startBtn.disabled=true;status('Se pornește camera…');
  try{
-  const cv=await loadOpenCV();
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+   throw new Error('Browserul nu permite accesul la cameră. Deschide linkul direct în Safari, nu în browserul din WhatsApp.');
+  }
   stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1920}}});
   video.srcObject=stream;await video.play();wrap.classList.remove('hidden');
   startBtn.disabled=true;stopBtn.disabled=false;captureBtn.disabled=false;
-  loop=setInterval(analyze,350);status('Camera este pornită. Încadrează documentul.');analyze();
+  status('Camera este pornită. Se încarcă detectarea marginilor în fundal…');
+  loop=setInterval(analyze,450);
+  loadOpenCV().then(()=>{if(stream){status('Camera este pornită. Încadrează documentul pentru detectarea marginilor.','ok');analyze();}})
+    .catch(e=>{if(stream)status('Camera funcționează, dar detectarea automată nu s-a încărcat. Poți fotografia pagina; încearcă să reîncarci Safari pentru detectarea marginilor.','err');});
  }catch(e){
   startBtn.disabled=false;
-  let msg=e.name==='NotAllowedError'?'Accesul la cameră a fost refuzat. Permite camera pentru acest site din setările browserului.':
+  let msg=e.name==='NotAllowedError'?'Accesul la cameră a fost refuzat. Deschide setările Safari și permite Camera pentru acest site.':
    e.name==='NotFoundError'?'Nu a fost găsită nicio cameră disponibilă.':
    e.name==='NotReadableError'?'Camera este folosită de altă aplicație. Închide aplicațiile care o folosesc și reîncearcă.':e.message;
   status(msg,'err');
@@ -166,7 +171,7 @@ function capture(){
   const source=document.createElement('canvas');source.width=vw;source.height=vh;
   source.getContext('2d').drawImage(video,0,0,vw,vh);
   let output=source;
-  if(lastQuad){
+  if(lastQuad && cvReady){
    const sx=vw/work.width,sy=vh/work.height;
    const pts=lastQuad.map(p=>({x:p.x*sx,y:p.y*sy})),[tl,tr,br,bl]=pts;
    const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
