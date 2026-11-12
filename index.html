@@ -1,145 +1,51 @@
 <!doctype html>
 <html lang="ro">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#172b43">
-<title>FINANCIAR – Scanner</title>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#172b43"><title>FINANCIAR – Scanner</title>
 <style>
-*{box-sizing:border-box}body{margin:0;padding:12px;background:#f2f5f8;color:#172b43;font-family:Arial,sans-serif}.panel{max-width:720px;margin:auto;padding:16px;background:#fff;border:1px solid #dce3eb;border-radius:15px}h1{font-size:21px;margin:0 0 8px}p{font-size:14px;line-height:1.45;color:#617084}#stage{position:relative;width:100%;aspect-ratio:3/4;background:#171717;border-radius:12px;overflow:hidden;margin:12px 0}video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}#overlay{pointer-events:none}button,.filelabel,select{width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;margin-top:9px}button{border:0;background:#245b8f;color:white}button.secondary,.filelabel{background:#e9eef4;color:#203c59}button:disabled{opacity:.45}.filelabel{display:block;text-align:center;cursor:pointer;border:1px solid #d5dde7}input[type=file]{display:none}select{border:1px solid #cbd5e1;background:white}#status{padding:11px;border-radius:9px;background:#edf1f5;font-size:13px;line-height:1.4;margin-top:12px}#status.ok{background:#e5f5eb;color:#176638}#status.err{background:#fdeaea;color:#a12626}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}.hint{font-size:12px}.hidden{display:none!important}.check{display:flex;align-items:center;gap:9px;margin:12px 0;font-size:14px}.check input{width:18px;height:18px}#pages{display:grid;gap:8px;margin-top:12px}.page{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #dce3eb;border-radius:9px}.page img{width:58px;height:74px;object-fit:cover;background:#eef1f4;border-radius:4px}.page span{flex:1;font-size:14px;font-weight:bold}.remove{width:auto;margin:0;padding:9px 12px;background:#fdeaea;color:#a12626}
+*{box-sizing:border-box}body{margin:0;padding:12px;background:#f2f5f8;color:#172b43;font-family:Arial,sans-serif}.panel{max-width:720px;margin:auto;padding:16px;background:#fff;border:1px solid #dce3eb;border-radius:15px}h1{font-size:21px;margin:0 0 8px}p{font-size:14px;line-height:1.45;color:#617084}#stage{position:relative;width:100%;height:min(64svh,650px);min-height:320px;background:#171717;border-radius:12px;overflow:hidden;margin:12px 0}video,#overlay{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}#overlay{pointer-events:none}.row{display:grid;grid-template-columns:1fr 1fr;gap:8px}button,.filelabel,select{width:100%;padding:13px;border-radius:10px;font-size:15px;font-weight:700;margin-top:9px}button{border:0;background:#245b8f;color:white}button.secondary,.filelabel{background:#e9eef4;color:#203c59}button:disabled{opacity:.45}.filelabel{display:block;text-align:center;cursor:pointer;border:1px solid #d5dde7}input[type=file]{display:none}select{border:1px solid #cbd5e1;background:white}#status{padding:11px;border-radius:9px;background:#edf1f5;font-size:13px;line-height:1.4;margin-top:12px}#status.ok{background:#e5f5eb;color:#176638}#status.err{background:#fdeaea;color:#a12626}.hint{font-size:12px}.hidden{display:none!important}.check{display:flex;align-items:center;gap:9px;margin:12px 0;font-size:14px}.check input{width:18px;height:18px}#pages{display:grid;gap:8px;margin-top:12px}.page{display:flex;align-items:center;gap:10px;padding:8px;border:1px solid #dce3eb;border-radius:9px}.page img{width:58px;height:74px;object-fit:cover;background:#eef1f4;border-radius:4px}.page span{flex:1;font-size:14px;font-weight:bold}.remove{width:auto;margin:0;padding:9px 12px;background:#fdeaea;color:#a12626}@media(max-width:480px){body{padding:8px}.panel{padding:12px;border-radius:12px}#stage{height:64svh;min-height:340px;max-height:650px}}
 </style>
 </head>
 <body><main class="panel">
-<h1>Scanner FINANCIAR</h1>
-<p>Încadrează documentul în cameră. Scannerul detectează automat colțurile și face decuparea când pagina rămâne stabilă. Poți scana până la 3 pagini într-un singur PDF.</p>
+<h1>Scanner FINANCIAR</h1><p>Ține pagina complet în cadru, pe un fundal contrastant. Conturul verde arată colțurile detectate. Poți scana până la 3 pagini într-un singur PDF.</p>
 <div id="stage" class="hidden"><video id="video" autoplay playsinline muted></video><canvas id="overlay"></canvas></div>
 <div class="row"><button id="start">PORNEȘTE CAMERA</button><button id="stop" class="secondary" disabled>OPREȘTE CAMERA</button></div>
 <label class="filelabel" for="photo">ADAUGĂ O FOTOGRAFIE DIN GALERIE</label><input id="photo" type="file" accept="image/*">
-<label for="mode" style="display:block;margin-top:13px;font-weight:bold">Aspectul documentului</label>
-<select id="mode"><option value="color">Color</option><option value="gray">Tonuri de gri</option><option value="bw">Alb-negru – text</option></select>
-<label class="check"><input id="autoCapture" type="checkbox" checked>Fotografiază automat când colțurile sunt stabile</label>
-<button id="capture" disabled>FOTOGRAFIAZĂ ACUM</button>
-<button id="next" class="secondary hidden">SCANEAZĂ PAGINA URMĂTOARE</button>
-<div id="pages" aria-live="polite"></div>
-<button id="pdf" class="hidden">DESCARCĂ PDF (max. 3 pagini, 4,5 MB)</button>
-<div id="status">Pornește camera sau adaugă o fotografie din galerie.</div>
-<p class="hint">Detecția se face local pe dispozitiv. Pentru rezultate bune, pune documentul pe un fundal contrastant, în lumină uniformă, și asigură-te că toate cele patru colțuri sunt vizibile. Niciun sistem nu poate detecta corect colțurile dacă sunt acoperite sau neclare.</p>
+<label for="mode" style="display:block;margin-top:13px;font-weight:bold">Aspectul documentului</label><select id="mode"><option value="color">Color</option><option value="gray">Tonuri de gri</option><option value="bw">Alb-negru – text</option></select>
+<label class="check"><input id="autoCapture" type="checkbox" checked>Fotografiază automat când colțurile sunt stabile</label><button id="capture" disabled>FOTOGRAFIAZĂ ACUM</button><button id="next" class="secondary hidden">SCANEAZĂ PAGINA URMĂTOARE</button>
+<div id="pages" aria-live="polite"></div><button id="pdf" class="hidden">DESCARCĂ PDF (max. 3 pagini, 4,5 MB)</button><div id="status">Pornește camera sau adaugă o fotografie din galerie.</div>
+<p class="hint">Detecția se face local pe dispozitiv. Lumina bună și contrastul dintre pagină și suprafață ajută mult. Dacă marginea paginii nu se distinge vizual, aplicația nu o poate detecta automat.</p>
 </main>
 <script>
 'use strict';
 const $=id=>document.getElementById(id),video=$('video'),stage=$('stage'),overlay=$('overlay'),ctx=overlay.getContext('2d');
-const statusBox=$('status'),captureBtn=$('capture'),photoInput=$('photo'),MAX_PAGES=3,MAX_PDF_BYTES=4500000;
-const parentOrigin=new URLSearchParams(location.search).get('parentOrigin')||'';
+const statusBox=$('status'),captureBtn=$('capture'),photoInput=$('photo'),MAX_PAGES=3,MAX_PDF_BYTES=4500000,parentOrigin=new URLSearchParams(location.search).get('parentOrigin')||'';
 let stream=null,cvReady=false,cvPromise=null,detectorTimer=null,lastQuad=null,busy=false,stableSince=0,previousQuad=null,pages=[];
 const work=document.createElement('canvas'),wctx=work.getContext('2d',{willReadFrequently:true});
 function say(text,kind=''){statusBox.textContent=text;statusBox.className=kind}
-function loadCV(){
- if(cvReady)return Promise.resolve(window.cv);if(cvPromise)return cvPromise;
- cvPromise=new Promise((resolve,reject)=>{
-  const timeout=setTimeout(()=>reject(new Error('OpenCV nu s-a încărcat. Verifică internetul și reîncarcă pagina.')),25000);
-  const script=document.createElement('script');script.async=true;script.src='https://docs.opencv.org/4.x/opencv.js';
-  script.onload=()=>{let tries=0;const poll=setInterval(()=>{if(window.cv&&window.cv.Mat){clearInterval(poll);clearTimeout(timeout);cvReady=true;resolve(window.cv)}else if(++tries>250){clearInterval(poll);clearTimeout(timeout);reject(new Error('OpenCV nu a pornit.'))}},100)};
-  script.onerror=()=>{clearTimeout(timeout);reject(new Error('Nu pot descărca OpenCV. Verifică conexiunea la internet.'))};document.head.appendChild(script);
- });return cvPromise;
-}
-function sortCorners(points){
- const center=points.reduce((a,p)=>({x:a.x+p.x/4,y:a.y+p.y/4}),{x:0,y:0});
- const sorted=points.slice().sort((a,b)=>Math.atan2(a.y-center.y,a.x-center.x)-Math.atan2(b.y-center.y,b.x-center.x));
- let first=0;for(let i=1;i<4;i++)if(sorted[i].x+sorted[i].y<sorted[first].x+sorted[first].y)first=i;
- let q=sorted.slice(first).concat(sorted.slice(0,first));
- const cross=(q[1].x-q[0].x)*(q[2].y-q[1].y)-(q[1].y-q[0].y)*(q[2].x-q[1].x);
- if(cross<0)q=[q[0],q[3],q[2],q[1]];return q;
-}
+function loadCV(){if(cvReady)return Promise.resolve(window.cv);if(cvPromise)return cvPromise;cvPromise=new Promise((resolve,reject)=>{let settled=false;const timeout=setTimeout(()=>{if(!settled){settled=true;reject(new Error('OpenCV nu s-a încărcat. Verifică internetul și reîncarcă pagina.'))}},30000);const script=document.createElement('script');script.async=true;script.src='https://docs.opencv.org/4.x/opencv.js';script.onload=()=>{let tries=0;const poll=setInterval(()=>{if(window.cv&&window.cv.Mat){clearInterval(poll);clearTimeout(timeout);settled=true;cvReady=true;resolve(window.cv)}else if(++tries>300){clearInterval(poll);clearTimeout(timeout);if(!settled){settled=true;reject(new Error('OpenCV nu a pornit. Reîncarcă pagina și încearcă din nou.'))}},100)};script.onerror=()=>{clearTimeout(timeout);if(!settled){settled=true;reject(new Error('Nu pot descărca OpenCV. Verifică internetul.'))}};document.head.appendChild(script)});return cvPromise}
+function sortCorners(points){const center=points.reduce((a,p)=>({x:a.x+p.x/4,y:a.y+p.y/4}),{x:0,y:0}),sorted=points.slice().sort((a,b)=>Math.atan2(a.y-center.y,a.x-center.x)-Math.atan2(b.y-center.y,b.x-center.x));let first=0;for(let i=1;i<4;i++)if(sorted[i].x+sorted[i].y<sorted[first].x+sorted[first].y)first=i;let q=sorted.slice(first).concat(sorted.slice(0,first));const cross=(q[1].x-q[0].x)*(q[2].y-q[1].y)-(q[1].y-q[0].y)*(q[2].x-q[1].x);if(cross<0)q=[q[0],q[3],q[2],q[1]];return q}
 function detectQuad(cv,canvas){
- const src=cv.imread(canvas),gray=new cv.Mat(),blur=new cv.Mat(),edges=new cv.Mat(),thr=new cv.Mat(),kernel=cv.Mat.ones(3,3,cv.CV_8U);
- let best=null,bestArea=canvas.width*canvas.height*.12;
- try{
-  cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);
-  const attempts=[];cv.Canny(blur,edges,35,110);cv.dilate(edges,edges,kernel);attempts.push(edges);
-  cv.adaptiveThreshold(blur,thr,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,31,10);cv.bitwise_not(thr,thr);attempts.push(thr);
-  for(const mat of attempts){
-   const contours=new cv.MatVector(),hier=new cv.Mat();
-   try{
-    cv.findContours(mat,contours,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
-    for(let i=0;i<contours.size();i++){
-     const contour=contours.get(i),approx=new cv.Mat();
-     try{
-      const perimeter=cv.arcLength(contour,true);if(perimeter<100)continue;
-      cv.approxPolyDP(contour,approx,.02*perimeter,true);
-      if(approx.rows!==4||!cv.isContourConvex(approx))continue;
-      const area=Math.abs(cv.contourArea(approx));if(area<=bestArea||area>canvas.width*canvas.height*.98)continue;
-      const d=approx.data32S,points=[{x:d[0],y:d[1]},{x:d[2],y:d[3]},{x:d[4],y:d[5]},{x:d[6],y:d[7]}];
-      const q=sortCorners(points),lengths=q.map((p,j)=>Math.hypot(p.x-q[(j+1)%4].x,p.y-q[(j+1)%4].y));
-      if(Math.min(...lengths)>Math.min(canvas.width,canvas.height)*.06){best=q;bestArea=area}
-     }finally{contour.delete();approx.delete()}
-    }
-   }finally{contours.delete();hier.delete()}
-  }
- }finally{src.delete();gray.delete();blur.delete();edges.delete();thr.delete();kernel.delete()}
- return best;
+ const src=cv.imread(canvas),gray=new cv.Mat(),blur=new cv.Mat(),edges=new cv.Mat(),thr=new cv.Mat(),closed=new cv.Mat(),kernel=cv.Mat.ones(5,5,cv.CV_8U);let best=null,bestArea=canvas.width*canvas.height*.075;
+ try{cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.GaussianBlur(gray,blur,new cv.Size(5,5),0);const attempts=[];
+  for(const [low,high] of [[25,75],[45,130],[70,180]]){cv.Canny(blur,edges,low,high);cv.morphologyEx(edges,closed,cv.MORPH_CLOSE,kernel);attempts.push(closed.clone())}
+  cv.adaptiveThreshold(blur,thr,255,cv.ADAPTIVE_THRESH_GAUSSIAN_C,cv.THRESH_BINARY,31,9);cv.bitwise_not(thr,thr);cv.morphologyEx(thr,closed,cv.MORPH_CLOSE,kernel);attempts.push(closed.clone());
+  for(const mat of attempts){const contours=new cv.MatVector(),hier=new cv.Mat();try{cv.findContours(mat,contours,hier,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);for(let i=0;i<contours.size();i++){const contour=contours.get(i),approx=new cv.Mat();try{const perimeter=cv.arcLength(contour,true);if(perimeter<100)continue;for(const epsilon of [.012,.018,.025,.035,.045]){cv.approxPolyDP(contour,approx,epsilon*perimeter,true);if(approx.rows!==4||!cv.isContourConvex(approx))continue;const area=Math.abs(cv.contourArea(approx));if(area<=bestArea||area>canvas.width*canvas.height*.97)continue;const d=approx.data32S,q=sortCorners([{x:d[0],y:d[1]},{x:d[2],y:d[3]},{x:d[4],y:d[5]},{x:d[6],y:d[7]}]),lengths=q.map((p,j)=>Math.hypot(p.x-q[(j+1)%4].x,p.y-q[(j+1)%4].y));if(Math.min(...lengths)<Math.min(canvas.width,canvas.height)*.045)continue;const width=Math.max(lengths[0],lengths[2]),height=Math.max(lengths[1],lengths[3]),ratio=width/height;if(ratio<.22||ratio>3.5)continue;best=q;bestArea=area;break}}finally{contour.delete();approx.delete()}}}finally{contours.delete();hier.delete();mat.delete()}}
+ }finally{src.delete();gray.delete();blur.delete();edges.delete();thr.delete();closed.delete();kernel.delete()}return best
 }
-function drawQuad(q){
- const dpr=window.devicePixelRatio||1;overlay.width=Math.round(stage.clientWidth*dpr);overlay.height=Math.round(stage.clientHeight*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,stage.clientWidth,stage.clientHeight);if(!q)return;
- const scale=Math.min(stage.clientWidth/work.width,stage.clientHeight/work.height),ox=(stage.clientWidth-work.width*scale)/2,oy=(stage.clientHeight-work.height*scale)/2;
- ctx.beginPath();q.forEach((p,i)=>i?ctx.lineTo(ox+p.x*scale,oy+p.y*scale):ctx.moveTo(ox+p.x*scale,oy+p.y*scale));ctx.closePath();ctx.fillStyle='rgba(36,220,125,.12)';ctx.strokeStyle='#24dc7d';ctx.lineWidth=3;ctx.fill();ctx.stroke();
- q.forEach(p=>{ctx.beginPath();ctx.arc(ox+p.x*scale,oy+p.y*scale,5,0,Math.PI*2);ctx.fillStyle='#24dc7d';ctx.fill()});
-}
-function quadsStable(a,b){if(!a||!b)return false;const tolerance=Math.max(work.width,work.height)*.018;return a.every((p,i)=>Math.hypot(p.x-b[i].x,p.y-b[i].y)<tolerance)}
-function analyzeFrame(){
- if(!stream||video.readyState<2||busy||!cvReady)return;busy=true;
- try{
-  const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return;
-  const scale=Math.min(1,850/Math.max(vw,vh));work.width=Math.round(vw*scale);work.height=Math.round(vh*scale);wctx.drawImage(video,0,0,work.width,work.height);
-  const found=detectQuad(window.cv,work);lastQuad=found;drawQuad(found);
-  if(found&&quadsStable(found,previousQuad)){if(!stableSince)stableSince=Date.now()}else stableSince=found?Date.now():0;
-  previousQuad=found?found.map(p=>({...p})):null;
-  if(found){const elapsed=Date.now()-stableSince;say($('autoCapture').checked?`Colțuri detectate. Ține telefonul nemișcat… ${Math.max(0,1.3-elapsed/1000).toFixed(1)} s`:'Colțuri detectate. Apasă „Fotografiază acum” când ești pregătit.','ok');if($('autoCapture').checked&&elapsed>=1300){capture()} }
-  else say('Nu văd toate colțurile. Așază pagina pe un fundal contrastant și ține-o complet în cadru.');
-  captureBtn.disabled=!found;
- }catch(e){say('Eroare la detectarea marginilor: '+e.message,'err')}finally{busy=false}
-}
-async function startCamera(){
- if(pages.length>=MAX_PAGES){say('Ai atins limita de 3 pagini.','err');return}
- $('start').disabled=true;say('Se pornește camera…');
- try{
-  if(!navigator.mediaDevices?.getUserMedia)throw new Error('Browserul nu oferă acces la cameră. Deschide pagina în Safari sau Chrome.');
-  stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:1920}}});video.srcObject=stream;stage.classList.remove('hidden');await video.play();$('stop').disabled=false;captureBtn.disabled=true;
-  say('Camera este pornită. Se încarcă detectarea colțurilor…');loadCV().then(()=>{if(stream){analyzeFrame();detectorTimer=setInterval(analyzeFrame,300)}}).catch(e=>say(e.message,'err'));
- }catch(e){$('start').disabled=false;say('Nu am putut porni camera: '+e.message,'err')}
-}
-function stopCamera(){if(detectorTimer){clearInterval(detectorTimer);detectorTimer=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;stage.classList.add('hidden');$('start').disabled=pages.length>=MAX_PAGES;$('stop').disabled=true;captureBtn.disabled=true;lastQuad=null;previousQuad=null;stableSince=0}
-function perspective(source,quad){
- const cv=window.cv,pts=quad.map(p=>({x:p.x*source.width/work.width,y:p.y*source.height/work.height})),[tl,tr,br,bl]=pts,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
- const width=Math.round(Math.max(dist(tl,tr),dist(bl,br))),height=Math.round(Math.max(dist(tl,bl),dist(tr,br)));
- if(width<100||height<100||width*height>14000000)return source;
- const src=cv.imread(source),from=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]),to=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,width,0,width,height,0,height]),matrix=cv.getPerspectiveTransform(from,to),dst=new cv.Mat();
- try{cv.warpPerspective(src,dst,matrix,new cv.Size(width,height),cv.INTER_CUBIC,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));const out=document.createElement('canvas');cv.imshow(out,dst);return out}finally{src.delete();from.delete();to.delete();matrix.delete();dst.delete()}
-}
-function makeJpeg(source,quad){
- let out=source;if(quad&&cvReady)out=perspective(source,quad);
- const maxEdge=1700,scale=Math.min(1,maxEdge/Math.max(out.width,out.height));if(scale<1){const resized=document.createElement('canvas');resized.width=Math.round(out.width*scale);resized.height=Math.round(out.height*scale);resized.getContext('2d').drawImage(out,0,0,resized.width,resized.height);out=resized}
- const mode=$('mode').value;if(mode!=='color'){const c=out.getContext('2d',{willReadFrequently:true}),image=c.getImageData(0,0,out.width,out.height),d=image.data;for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(mode==='bw')y=y>178?255:0;d[i]=d[i+1]=d[i+2]=y}c.putImageData(image,0,0)}
- return {data:out.toDataURL('image/jpeg',.84),width:out.width,height:out.height};
-}
-function addPage(source,quad){
- if(pages.length>=MAX_PAGES){say('Poți include maximum 3 pagini într-un PDF.','err');return}
- try{const page=makeJpeg(source,quad);pages.push(page);renderPages();stopCamera();$('next').classList.toggle('hidden',pages.length>=MAX_PAGES);$('start').disabled=pages.length>=MAX_PAGES;$('pdf').classList.remove('hidden');say(`Pagina ${pages.length} din ${MAX_PAGES} a fost scanată${quad?' și decupată automat.':'. Nu am putut confirma colțurile; verifică imaginea.'}`,quad?'ok':'');if(parentOrigin)window.parent.postMessage({type:'FINANCIAR_SCAN_PAGE',imageDataUrl:page.data,mimeType:'image/jpeg',pageNumber:pages.length},parentOrigin)}catch(e){say('Nu am putut procesa pagina: '+e.message,'err')}
-}
+function drawQuad(q){const dpr=devicePixelRatio||1;overlay.width=Math.round(stage.clientWidth*dpr);overlay.height=Math.round(stage.clientHeight*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,stage.clientWidth,stage.clientHeight);if(!q)return;const scale=Math.max(stage.clientWidth/work.width,stage.clientHeight/work.height),ox=(stage.clientWidth-work.width*scale)/2,oy=(stage.clientHeight-work.height*scale)/2;ctx.beginPath();q.forEach((p,i)=>i?ctx.lineTo(ox+p.x*scale,oy+p.y*scale):ctx.moveTo(ox+p.x*scale,oy+p.y*scale));ctx.closePath();ctx.fillStyle='rgba(36,220,125,.12)';ctx.strokeStyle='#24dc7d';ctx.lineWidth=3;ctx.fill();ctx.stroke();q.forEach(p=>{ctx.beginPath();ctx.arc(ox+p.x*scale,oy+p.y*scale,6,0,Math.PI*2);ctx.fillStyle='#24dc7d';ctx.fill()})}
+function quadsStable(a,b){if(!a||!b)return false;const tolerance=Math.max(work.width,work.height)*.022;return a.every((p,i)=>Math.hypot(p.x-b[i].x,p.y-b[i].y)<tolerance)}
+function analyzeFrame(){if(!stream||video.readyState<2||busy||!cvReady)return;busy=true;try{const vw=video.videoWidth,vh=video.videoHeight;if(!vw||!vh)return;const scale=Math.min(1,1000/Math.max(vw,vh));work.width=Math.round(vw*scale);work.height=Math.round(vh*scale);wctx.drawImage(video,0,0,work.width,work.height);const found=detectQuad(window.cv,work);lastQuad=found;drawQuad(found);if(found&&quadsStable(found,previousQuad)){if(!stableSince)stableSince=Date.now()}else stableSince=found?Date.now():0;previousQuad=found?found.map(p=>({...p})):null;if(found){const elapsed=Date.now()-stableSince;say($('autoCapture').checked?`Colțuri detectate. Ține telefonul nemișcat… ${Math.max(0,1.5-elapsed/1000).toFixed(1)} s`:'Colțuri detectate. Apasă „Fotografiază acum”.','ok');if($('autoCapture').checked&&elapsed>=1500)capture()}else say('Nu văd toate colțurile. Depărtează camera și încearcă un fundal mai închis decât pagina.');captureBtn.disabled=!found}catch(e){say('Eroare la detectarea colțurilor: '+e.message,'err')}finally{busy=false}}
+async function startCamera(){if(pages.length>=MAX_PAGES){say('Ai atins limita de 3 pagini.','err');return}$('start').disabled=true;say('Se pornește camera…');try{if(!navigator.mediaDevices?.getUserMedia)throw new Error('Camera nu este disponibilă. Deschide pagina în Safari.');stream=await navigator.mediaDevices.getUserMedia({audio:false,video:{facingMode:{ideal:'environment'},width:{ideal:1920},height:{ideal:1080}}});video.srcObject=stream;stage.classList.remove('hidden');await video.play();$('stop').disabled=false;captureBtn.disabled=true;say('Camera este pornită. Se încarcă detectarea…');loadCV().then(()=>{if(stream){analyzeFrame();detectorTimer=setInterval(analyzeFrame,350)}}).catch(e=>say(e.message,'err'))}catch(e){$('start').disabled=false;say('Nu am putut porni camera: '+e.message,'err')}}
+function stopCamera(){if(detectorTimer){clearInterval(detectorTimer);detectorTimer=null}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}video.srcObject=null;stage.classList.add('hidden');$('start').disabled=pages.length>=MAX_PAGES;$('stop').disabled=true;captureBtn.disabled=true;lastQuad=previousQuad=null;stableSince=0;ctx.clearRect(0,0,overlay.width,overlay.height)}
+function perspective(source,quad){const cv=window.cv,pts=quad.map(p=>({x:p.x*source.width/work.width,y:p.y*source.height/work.height})),[tl,tr,br,bl]=pts,dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),width=Math.round(Math.max(dist(tl,tr),dist(bl,br))),height=Math.round(Math.max(dist(tl,bl),dist(tr,br)));if(width<100||height<100||width*height>14000000)return source;const src=cv.imread(source),from=cv.matFromArray(4,1,cv.CV_32FC2,[tl.x,tl.y,tr.x,tr.y,br.x,br.y,bl.x,bl.y]),to=cv.matFromArray(4,1,cv.CV_32FC2,[0,0,width,0,width,height,0,height]),matrix=cv.getPerspectiveTransform(from,to),dst=new cv.Mat();try{cv.warpPerspective(src,dst,matrix,new cv.Size(width,height),cv.INTER_CUBIC,cv.BORDER_CONSTANT,new cv.Scalar(255,255,255,255));const out=document.createElement('canvas');cv.imshow(out,dst);return out}finally{src.delete();from.delete();to.delete();matrix.delete();dst.delete()}}
+function makeJpeg(source,quad){let out=source;if(quad&&cvReady)out=perspective(source,quad);const scale=Math.min(1,1700/Math.max(out.width,out.height));if(scale<1){const resized=document.createElement('canvas');resized.width=Math.round(out.width*scale);resized.height=Math.round(out.height*scale);resized.getContext('2d').drawImage(out,0,0,resized.width,resized.height);out=resized}const mode=$('mode').value;if(mode!=='color'){const c=out.getContext('2d',{willReadFrequently:true}),im=c.getImageData(0,0,out.width,out.height),d=im.data;for(let i=0;i<d.length;i+=4){let y=.299*d[i]+.587*d[i+1]+.114*d[i+2];if(mode==='bw')y=y>178?255:0;d[i]=d[i+1]=d[i+2]=y}c.putImageData(im,0,0)}return{data:out.toDataURL('image/jpeg',.84),width:out.width,height:out.height}}
+function renderPages(){const list=$('pages');list.replaceChildren();pages.forEach((page,index)=>{const item=document.createElement('div');item.className='page';const image=document.createElement('img');image.src=page.data;image.alt=`Pagina ${index+1}`;const label=document.createElement('span');label.textContent=`Pagina ${index+1} din ${pages.length}`;const remove=document.createElement('button');remove.className='remove';remove.textContent='Șterge';remove.onclick=()=>{pages.splice(index,1);renderPages();$('next').classList.toggle('hidden',pages.length===0||pages.length>=MAX_PAGES);$('start').disabled=pages.length>=MAX_PAGES;$('pdf').classList.toggle('hidden',pages.length===0);say('Pagina a fost ștearsă.')};item.append(image,label,remove);list.append(item)})}
+function addPage(source,quad){if(pages.length>=MAX_PAGES){say('Poți include maximum 3 pagini într-un PDF.','err');return}try{const page=makeJpeg(source,quad);pages.push(page);renderPages();stopCamera();$('next').classList.toggle('hidden',pages.length>=MAX_PAGES);$('start').disabled=pages.length>=MAX_PAGES;$('pdf').classList.remove('hidden');say(`Pagina ${pages.length} din 3 a fost adăugată${quad?' și decupată automat.':'; colțurile nu au fost confirmate.'}`,quad?'ok':'');if(parentOrigin)window.parent.postMessage({type:'FINANCIAR_SCAN_PAGE',imageDataUrl:page.data,mimeType:'image/jpeg',pageNumber:pages.length},parentOrigin)}catch(e){say('Nu am putut procesa pagina: '+e.message,'err')}}
 function capture(){if(!stream||video.readyState<2||!lastQuad)return;const c=document.createElement('canvas');c.width=video.videoWidth;c.height=video.videoHeight;c.getContext('2d').drawImage(video,0,0);addPage(c,lastQuad)}
-function renderPages(){const list=$('pages');list.replaceChildren();pages.forEach((page,index)=>{const item=document.createElement('div');item.className='page';const image=document.createElement('img');image.src=page.data;image.alt=`Pagina ${index+1}`;const label=document.createElement('span');label.textContent=`Pagina ${index+1} din ${pages.length}`;const remove=document.createElement('button');remove.className='remove';remove.textContent='Șterge';remove.setAttribute('aria-label',`Șterge pagina ${index+1}`);remove.onclick=()=>{pages.splice(index,1);renderPages();$('next').classList.toggle('hidden',pages.length===0||pages.length>=MAX_PAGES);$('start').disabled=pages.length>=MAX_PAGES;$('pdf').classList.toggle('hidden',pages.length===0);say('Pagina a fost ștearsă.')};item.append(image,label,remove);list.append(item)})}
-photoInput.addEventListener('change',async()=>{
- const file=photoInput.files?.[0];photoInput.value='';if(!file)return;if(pages.length>=MAX_PAGES){say('Poți include maximum 3 pagini într-un PDF.','err');return}
- const url=URL.createObjectURL(file),img=new Image();img.onload=async()=>{try{const scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);c.getContext('2d').drawImage(img,0,0,c.width,c.height);work.width=c.width;work.height=c.height;say('Fotografie încărcată. Detectez colțurile…');await loadCV();const quad=detectQuad(window.cv,c);addPage(c,quad)}catch(e){say('Nu am putut procesa fotografia: '+e.message,'err')}finally{URL.revokeObjectURL(url)}};img.onerror=()=>{URL.revokeObjectURL(url);say('Nu pot deschide fotografia selectată.','err')};img.src=url;
-});
+photoInput.addEventListener('change',()=>{const file=photoInput.files?.[0];photoInput.value='';if(!file)return;if(pages.length>=MAX_PAGES){say('Poți include maximum 3 pagini într-un PDF.','err');return}const url=URL.createObjectURL(file),img=new Image();img.onload=async()=>{try{const scale=Math.min(1,1800/Math.max(img.naturalWidth,img.naturalHeight)),c=document.createElement('canvas');c.width=Math.round(img.naturalWidth*scale);c.height=Math.round(img.naturalHeight*scale);c.getContext('2d').drawImage(img,0,0,c.width,c.height);work.width=c.width;work.height=c.height;say('Fotografie încărcată. Detectez colțurile…');await loadCV();const quad=detectQuad(window.cv,c);addPage(c,quad)}catch(e){say('Nu am putut procesa fotografia: '+e.message,'err')}finally{URL.revokeObjectURL(url)}};img.onerror=()=>{URL.revokeObjectURL(url);say('Nu pot deschide fotografia selectată.','err')};img.src=url});
 async function loadJsPDF(){if(window.jspdf?.jsPDF)return window.jspdf.jsPDF;await new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js';script.onload=resolve;script.onerror=()=>reject(new Error('Nu am putut încărca biblioteca PDF. Verifică internetul.'));document.head.appendChild(script)});if(!window.jspdf?.jsPDF)throw new Error('Biblioteca PDF nu este disponibilă.');return window.jspdf.jsPDF}
 function imageAtQuality(page,quality,maxEdge){return new Promise((resolve,reject)=>{const image=new Image();image.onload=()=>{const scale=Math.min(1,maxEdge/Math.max(image.naturalWidth,image.naturalHeight)),canvas=document.createElement('canvas');canvas.width=Math.max(1,Math.round(image.naturalWidth*scale));canvas.height=Math.max(1,Math.round(image.naturalHeight*scale));canvas.getContext('2d').drawImage(image,0,0,canvas.width,canvas.height);resolve({data:canvas.toDataURL('image/jpeg',quality),width:canvas.width,height:canvas.height})};image.onerror=()=>reject(new Error('Imaginea scanată nu poate fi citită.'));image.src=page.data})}
-async function createPDF(){
- if(!pages.length)return;say('Pregătesc PDF-ul și verific limita de 4,5 MB…');$('pdf').disabled=true;
- try{const JsPDF=await loadJsPDF(),qualities=[.82,.68,.54,.42],maxEdges=[1700,1450,1200,1000];let blob=null;
-  for(let attempt=0;attempt<qualities.length;attempt++){const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});for(let i=0;i<pages.length;i++){if(i)pdf.addPage('a4','portrait');const image=await imageAtQuality(pages[i],qualities[attempt],maxEdges[attempt]),pageW=210,pageH=297,scale=Math.min(pageW/image.width,pageH/image.height),w=image.width*scale,h=image.height*scale;pdf.addImage(image.data,'JPEG',(pageW-w)/2,(pageH-h)/2,w,h,undefined,'FAST')}blob=pdf.output('blob');if(blob.size<=MAX_PDF_BYTES)break}
-  if(!blob||blob.size>MAX_PDF_BYTES)throw new Error('PDF-ul depășește 4,5 MB chiar și după comprimare. Încearcă fotografii mai clare, dar cu rezoluție mai mică.');
-  const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='document-scanat.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);say(`PDF descărcat: ${pages.length} pagină${pages.length===1?'':'i'}, ${(blob.size/1024/1024).toFixed(2)} MB.`,'ok');
- }catch(e){say(e.message,'err')}finally{$('pdf').disabled=false}
-}
+async function createPDF(){if(!pages.length)return;say('Pregătesc PDF-ul și verific limita de 4,5 MB…');$('pdf').disabled=true;try{const JsPDF=await loadJsPDF(),qualities=[.82,.68,.54,.42],maxEdges=[1700,1450,1200,1000];let blob=null;for(let n=0;n<qualities.length;n++){const pdf=new JsPDF({orientation:'portrait',unit:'mm',format:'a4',compress:true});for(let i=0;i<pages.length;i++){if(i)pdf.addPage('a4','portrait');const image=await imageAtQuality(pages[i],qualities[n],maxEdges[n]),scale=Math.min(210/image.width,297/image.height),w=image.width*scale,h=image.height*scale;pdf.addImage(image.data,'JPEG',(210-w)/2,(297-h)/2,w,h,undefined,'FAST')}blob=pdf.output('blob');if(blob.size<=MAX_PDF_BYTES)break}if(!blob||blob.size>MAX_PDF_BYTES)throw new Error('PDF-ul depășește 4,5 MB după comprimare.');const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='document-scanat.pdf';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);say(`PDF descărcat: ${pages.length} pagină${pages.length===1?'':'i'}, ${(blob.size/1048576).toFixed(2)} MB.`,'ok')}catch(e){say(e.message,'err')}finally{$('pdf').disabled=false}}
 $('start').addEventListener('click',startCamera);$('stop').addEventListener('click',stopCamera);captureBtn.addEventListener('click',capture);$('next').addEventListener('click',startCamera);$('pdf').addEventListener('click',createPDF);window.addEventListener('pagehide',stopCamera);
 </script></body></html>
